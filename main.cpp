@@ -3,13 +3,10 @@
 #include <condition_variable>
 #include <luna/luna.h>
 #include <slack/slack.h>
-#include <easylogging++.h>
+#include "logging.h"
 #include "token_storage.h"
 #include "event_receiver.h"
 
-#define ELPP_LOGGING_FLAGS_FROM_ARG
-#define ELPP_THREAD_SAFE
-#define ELPP_FORCE_USE_STD_THREAD
 INITIALIZE_EASYLOGGINGPP
 
 void luna_logger(luna::log_level level, const std::string &message)
@@ -58,9 +55,6 @@ void slack_logger(slack::log_level level, const std::string &message)
 
 int main(int argc, char* argv[])
 {
-    el::Loggers::addFlag(el::LoggingFlag::HierarchicalLogging);
-
-
     START_EASYLOGGINGPP(argc, argv);
 
 //    el::Configurations defaultConf;
