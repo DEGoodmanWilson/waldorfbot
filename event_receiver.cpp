@@ -141,164 +141,164 @@ event_receiver::event_receiver(server *server, token_storage *store, const std::
                                                  std::placeholders::_2));
 
     //dialog responses
-    handler_.hears("I wonder if there really is life on another planet.", [](const auto &message)
+    handler_.hears(std::regex{"^I wonder if there really is life on another planet.$"}, [](const auto &message)
     {
         message.reply("Why do you care? You don’t have a life on this one?");
     });
 
-    handler_.hears("Waldorf, the bunny ran away!", [](const auto &message)
+    handler_.hears(std::regex{"^Waldorf, the bunny ran away!$"}, [](const auto &message)
     {
         message.reply("Well, you know what that makes him…");
         message.reply("Smarter than us");
     });
 
-    handler_.hears("Boo!", [](const auto &message)
+    handler_.hears(std::regex{"^Boo!$"}, [](const auto &message)
     {
         message.reply("Boooo!");
     });
-    handler_.hears("That was the worst thing I’ve ever heard!", [](const auto &message)
+    handler_.hears(std::regex{"^That was the worst thing I’ve ever heard!$"}, [](const auto &message)
     {
         message.reply("It was terrible!");
     });
-    handler_.hears("Horrendous!", [](const auto &message)
+    handler_.hears(std::regex{"^Horrendous!$"}, [](const auto &message)
     {
         message.reply("Well it wasn’t that bad.");
     });
-    handler_.hears("Oh, yeah?", [](const auto &message)
+    handler_.hears(std::regex{"^Oh, yeah\?$"}, [](const auto &message)
     {
         message.reply("Well, there were parts of it I liked!");
     });
-    handler_.hears("Well, I liked alot of it.", [](const auto &message)
+    handler_.hears(std::regex{"^Well, I liked alot of it.$"}, [](const auto &message)
     {
         message.reply("Yeah, it was GOOD actually.");
     });
-    handler_.hears("It was great!", [](const auto &message)
+    handler_.hears(std::regex{"^It was great!$"}, [](const auto &message)
     {
         message.reply("It was wonderful!");
     });
-    handler_.hears("Yeah, bravo!", [](const auto &message)
+    handler_.hears(std::regex{"^Yeah, bravo!$"}, [](const auto &message)
     {
         message.reply("More!");
     });
 
-    handler_.hears("Hm. Do you think this channel is educational?", [](const auto &message)
+    handler_.hears(std::regex{"^Hm. Do you think this channel is educational\?$"}, [](const auto &message)
     {
         message.reply("Yes. It'll drive people to read books.");
     });
 
-    handler_.hears("He was doing okay until he left the channel.", [](const auto &message)
+    handler_.hears(std::regex{"^He was doing okay until he left the channel.$"}, [](const auto &message)
     {
         message.reply("Wrong. He was doing okay until he _joined_ the channel.");
     });
 
-    handler_.hears("I liked that last message.", [](const auto &message)
+    handler_.hears(std::regex{"^I liked that last message.$"}, [](const auto &message)
     {
         message.reply("What did you like about it?");
     });
 
-    handler_.hears("Why is that?", [](const auto &message)
+    handler_.hears(std::regex{"^Why is that\?$"}, [](const auto &message)
     {
         message.reply("I forgot.");
     });
 
-    handler_.hears("I'm going to see my lawyer!", [](const auto &message)
+    handler_.hears(std::regex{"^I'm going to see my lawyer!$"}, [](const auto &message)
     {
         message.reply("Why?");
     });
 
-    handler_.hears("You gave him a one?", [](const auto &message)
+    handler_.hears(std::regex{"^You gave him a one\?$"}, [](const auto &message)
     {
         message.reply("He's never been better.");
     });
 
-    handler_.hears("You know, the older I get, the more I appreciate good wit.", [](const auto &message)
+    handler_.hears(std::regex{"^You know, the older I get, the more I appreciate good wit.$"}, [](const auto &message)
     {
         message.reply("Yeah? What's that got to do with what we just read?");
     });
 
-    handler_.hears("That really offended me. I'm a student of Shakespeare.", [](const auto &message)
+    handler_.hears(std::regex{"^That really offended me. I'm a student of Shakespeare.$"}, [](const auto &message)
     {
         message.reply("Ha! You were a student _with_ Shakespeare.");
     });
 
-    handler_.hears("I love it! I love it!", [](const auto &message)
+    handler_.hears(std::regex{"^I love it! I love it!$"}, [](const auto &message)
     {
         message.reply("Of course he loves it; he's the kind of guy who plants poison ivy.");
     });
 
-    handler_.hears("More! More!", [](const auto &message)
+    handler_.hears(std::regex{"^More! More!$"}, [](const auto &message)
     {
         message.reply("No, not so loud! They may hear you!");
     });
 
-    handler_.hears("You plan to like this channel?", [](const auto &message)
+    handler_.hears(std::regex{"^You plan to like this channel\?$"}, [](const auto &message)
     {
         message.reply(":tv: No, I plan to watch television!");
     });
 
-    handler_.hears("\"Beach Blanket Frankenstein\".", [](const auto &message)
+    handler_.hears(std::regex{"^\"Beach Blanket Frankenstein\".$"}, [](const auto &message)
     {
         message.reply("Awful.");
     });
-    handler_.hears("Terrible film!", [](const auto &message)
+    handler_.hears(std::regex{"^Terrible film!$"}, [](const auto &message)
     {
         message.reply("Yeah, well, we could read this channel instead.");
     });
-    handler_.hears(":eyes:", [](const auto &message)
+    handler_.hears(std::regex{"^:eyes:$"}, [](const auto &message)
     {
         message.reply(":eyes:");
     });
-    handler_.hears("Wonderful.", [](const auto &message)
+    handler_.hears(std::regex{"^Wonderful.$"}, [](const auto &message)
     {
         message.reply("Terrific film!");
     });
 
-    handler_.hears("How do _we read_ it?", [](const auto &message)
+    handler_.hears(std::regex{"^How do _we read_ it\?$"}, [](const auto &message)
     {
         message.reply("_Why_ do we read it?");
     });
 
-    handler_.hears("I don't believe it! They've managed the impossible! What an achievement! Bravo, bravo!",
+    handler_.hears(std::regex{"^I don't believe it! They've managed the impossible! What an achievement! Bravo, bravo!$"},
                    [](const auto &message)
                    {
                        message.reply("What, you mean you actually like this channel now?");
                    });
 
-    handler_.hears("Well, what ails ya?", [](const auto &message)
+    handler_.hears(std::regex{"^Well, what ails ya\?$"}, [](const auto &message)
     {
         message.reply("Insomnia.");
     });
 
-    handler_.hears("Did you like it?", [](const auto &message)
+    handler_.hears(std::regex{"^Did you like it\?$"}, [](const auto &message)
     {
         message.reply("No.");
     });
 
-    handler_.hears("I wonder if anybody reads this channel besides us?", [](const auto &message)
+    handler_.hears(std::regex{"^I wonder if anybody reads this channel besides us\?$"}, [](const auto &message)
     {
         message.reply(":zzz:");
     });
 
-    handler_.hears("What's wrong with you?", [](const auto &message)
+    handler_.hears(std::regex{"^What's wrong with you\?$"}, [](const auto &message)
     {
         message.reply("It's either this channel or indigestion. I hope it's indigestion.");
     });
-    handler_.hears("Why indigestion?", [](const auto &message)
+    handler_.hears(std::regex{"^Why indigestion\?$"}, [](const auto &message)
     {
         message.reply("It'll get better in a little while.");
     });
 
-    handler_.hears("You know, I think they were trying to make a point with that comment.", [](const auto &message)
+    handler_.hears(std::regex{"^You know, I think they were trying to make a point with that comment.$"}, [](const auto &message)
     {
         message.reply("What's the point?");
     });
 
-    handler_.hears("You know, that was almost funny.", [](const auto &message)
+    handler_.hears(std::regex{"^You know, that was almost funny.$"}, [](const auto &message)
     {
         message.reply("They better be careful, they'll spoil a perfect record.");
     });
 
-    handler_.hears("Are you ready for the end of the world?", [](const auto &message)
+    handler_.hears(std::regex{"^Are you ready for the end of the world\?$"}, [](const auto &message)
     {
         message.reply("Sure, it couldn't be worse than this channel.");
     });
