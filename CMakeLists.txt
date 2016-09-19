@@ -9,6 +9,6 @@ CONAN_BASIC_SETUP()
 include_directories(SYSTEM
 )
 
-set(SOURCE_FILES main.cpp token_storage.cpp token_storage.h event_receiver.cpp event_receiver.h route_set.cpp route_set.h)
+set(SOURCE_FILES main.cpp event_receiver.cpp event_receiver.h route_set.cpp route_set.h)
 add_executable(waldorfbot ${SOURCE_FILES})
 target_link_libraries(waldorfbot ${CONAN_LIBS})
