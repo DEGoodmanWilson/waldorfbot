@@ -10,7 +10,7 @@ RUN groupadd 1001 -g 1001
 RUN groupadd 1000 -g 1000
 RUN useradd -ms /bin/bash conan -g 1001 -G 1000 && echo "conan:conan" | chpasswd && adduser conan sudo
 RUN echo "conan ALL= NOPASSWD: ALL\n" >> /etc/sudoers
-RUN mkdir  -p /home/conan/.conan
+RUN mkdir -p /home/conan/.conan
 RUN mkdir -p /home/conan/app
 ADD . /home/conan/app
 RUN mkdir -p /home/conan/app/build
@@ -23,5 +23,5 @@ WORKDIR /home/conan/app
 RUN conan install -s compiler=gcc -s compiler.version=5.4 -s compiler.libcxx=libstdc++11 --build=missing
 WORKDIR /home/conan/app/build
 RUN cmake ..
-RUN cmake --build .
-CMD ["/home/conan/app/build/bin/waldorfbot", "-v"]
+#RUN cmake --build .
+#CMD ["/home/conan/app/build/bin/waldorfbot", "-v"]

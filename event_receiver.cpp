@@ -27,6 +27,35 @@ Iter select_randomly(Iter start, Iter end)
     return select_randomly(start, end, gen);
 }
 
+bool is_companion_installed_(const slack::slack &client, slack::user_id &user_id)
+{
+    auto user_list = client.users.list().members;
+    for (const auto &user : user_list)
+    {
+        if (user.is_bot && user.profile.api_app_id && (*(user.profile.api_app_id) == STATLER_APP_ID))
+        {
+            user_id = user.id;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool is_user_in_channel_(const slack::slack &client, const slack::user_id &user_id, const slack::channel_id &channel_id)
+{
+    auto channel_members = client.channels.info(channel_id).channel.members;
+    for (const auto &user : channel_members)
+    {
+        if (user == user_id)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 uint8_t d100_()
 {
     static std::random_device rd;
@@ -56,22 +85,11 @@ event_receiver::handle_unknown(std::shared_ptr<slack::event::unknown> event, con
     if (event->type == "bb.team_added")
     {
         //we've just been added to the team. Message the app installer.
-        //TODO do this in the background
         slack::slack c{envelope.token.bot_token};
-
-        bool is_companion_installed = false;
-        auto user_list = c.users.list().members;
-        for (const auto &user : user_list)
-        {
-            if (user.is_bot && user.profile.api_app_id && (*(user.profile.api_app_id) == STATLER_APP_ID))
-            {
-                is_companion_installed = true;
-                break;
-            }
-        }
+        slack::user_id companion_user_id;
 
         c.chat.postMessage(envelope.token.user_id, "Thanks for installing me!");
-        if (is_companion_installed)
+        if (is_companion_installed_(c, companion_user_id))
         {
             c.chat.postMessage(envelope.token.user_id,
                                "Just invite Statlerbot and me into any channel, and we'll get to heckling.");
@@ -94,46 +112,24 @@ void event_receiver::handle_join_channel(std::shared_ptr<slack::event::message_c
     //TODO do this in the background
     slack::slack c{envelope.token.bot_token};
 
-    bool is_companion_installed = false;
     slack::user_id companion_bot_user_id;
-    auto user_list = c.users.list().members;
-    for (const auto &user : user_list)
+    if(is_companion_installed_(c, companion_bot_user_id))
     {
-        if (user.is_bot && user.profile.api_app_id && (*(user.profile.api_app_id) == STATLER_APP_ID))
+        if(is_user_in_channel_(c, companion_bot_user_id, event->channel))
         {
-            is_companion_installed = true;
-            companion_bot_user_id = user.id;
-            break;
+            c.chat.postMessage(event->channel, "Statlerbot! There you are, old chum.");
         }
-    }
-
-    bool is_companion_in_channel = false;
-    if(is_companion_installed)
-    {
-        auto channel_members = c.channels.info(event->channel).channel.members;
-        for (const auto &user : channel_members)
+        else
         {
-            if (user == companion_bot_user_id)
-            {
-                is_companion_in_channel = true;
-                break;
-            }
+            c.chat.postMessage(event->channel,
+                               "Statlerbot, where are you? Can someone invite Statlerbot into the channel?");
         }
-    }
-
-    if (!is_companion_installed)
-    {
-        c.chat.postMessage(event->channel,
-                           "Statlerbot, where are you? Can someone <https://beepboophq.com/bots/083d21c8b3eb4886acf31f748337c1c2|install Statlerbot> into this team?");
-    }
-    else if (!is_companion_in_channel)
-    {
-        c.chat.postMessage(event->channel,
-                           "Statlerbot, where are you? Can someone invite Statlerbot into the channel?");
     }
     else
     {
-        c.chat.postMessage(event->channel, "Statlerbot! There you are, old chum.");
+        c.chat.postMessage(event->channel,
+                           "Statlerbot, where are you? Can someone <https://beepboophq.com/bots/083d21c8b3eb4886acf31f748337c1c2|install Statlerbot> into this team?");
+
     }
 }
 
@@ -461,21 +457,26 @@ event_receiver::event_receiver(server *server, const std::string &verification_t
         message.reply("Wait, don't leave me here all by myself!");
     });
 
-    //// Strangely, this is how we find out if we've been kicked. Fragile, I'm guessing. TOTAL HACK ALERT!
-    handler_.hears(std::regex{"^You have been removed from #"}, [](const auto &message)
-    {
-        if (message.from_user_id != "USLACKBOT") return;
-
-        //extract the channel name from the message
-        // "You have been removed from #donbot-testing2 by <@U0JFHT99N|don>"
-        std::smatch pieces_match;
-        std::regex message_regex{"(#[\\w\\d-]+)"};
-        if (std::regex_search(message.text, pieces_match, message_regex))
-        {
-            //post into that channel
-            slack::slack c{message.token.bot_token};
-            auto channel_name = pieces_match[1].str();
-            c.chat.postMessage(channel_name, "Well, Statlerbot, it's time to go. Thank goodness!");
-        }
-    });
+    // DOESN'T WORK
+//    //// Strangely, this is how we find out if we've been kicked. Fragile, I'm guessing. TOTAL HACK ALERT!
+//    handler_.hears(std::regex{"^You have been removed from #"}, [](const auto &message)
+//    {
+//        if (message.from_user_id != "USLACKBOT") return;
+//
+//        //extract the channel name from the message
+//        // "You have been removed from #donbot-testing2 by <@U0JFHT99N|don>"
+//        std::smatch pieces_match;
+//        std::regex message_regex{"(#[\\w\\d-]+)"};
+//        if (std::regex_search(message.text, pieces_match, message_regex))
+//        {
+//            //post into that channel
+//            slack::slack c{message.token.bot_token};
+//            auto channel_name = pieces_match[1].str();
+//            slack::user_id companion_user_id;
+//            if(is_companion_installed_(c, companion_user_id))
+//            {
+//                c.chat.postMessage(channel_name, "Well, Statlerbot, it's time to go. Thank goodness!");
+//            }
+//        }
+//    });
 }
