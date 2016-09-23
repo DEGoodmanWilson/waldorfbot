@@ -133,8 +133,6 @@ void
 event_receiver::handle_message(std::shared_ptr<slack::event::message> event,
                                const slack::http_event_envelope &envelope)
 {
-    LOG(DEBUG) << "Handling message: " << event->text;
-
     static std::vector<std::string> phrases = {
             "They aren’t half bad.",
             "What’s all the commotion about?",
