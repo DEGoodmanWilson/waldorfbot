@@ -73,6 +73,17 @@ int main(int argc, char* argv[])
         port = atoi(port_str);
     }
 
+    // Create a memory store
+    auto beepboop_token_raw = std::getenv("BEEPBOOP_TOKEN");
+    auto beepboop_persist_url_raw = std::getenv("BEEPBOOP_PERSIST_URL");
+    std::string beepboop_token, beepboop_persist_url;
+
+    if(beepboop_token_raw && beepboop_persist_url_raw)
+    {
+        beepboop_token = {beepboop_token_raw};
+        beepboop_persist_url = {beepboop_persist_url_raw};
+    }
+    beep_boop_persist store{beepboop_persist_url, beepboop_token};
 
     // Now, let's stand up a webserver
     // Let's not worry about TLS for now, as we'll stand up behind ngrok for now
@@ -90,7 +101,7 @@ int main(int argc, char* argv[])
 
     LOG(INFO) << "Server started on port " << std::to_string(server.get_port());
 
-    event_receiver receiver{&server, ""}; //use empty string because beep boop is doing the checking for us.
+    event_receiver receiver{server, store, ""}; //use empty string because beep boop is doing the checking for us.
 
     //IDLE UNTIL DEAD basically just stop this thread in its tracks
     std::mutex m;

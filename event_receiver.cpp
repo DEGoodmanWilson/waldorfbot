@@ -27,35 +27,6 @@ Iter select_randomly(Iter start, Iter end)
     return select_randomly(start, end, gen);
 }
 
-bool is_companion_installed_(const slack::slack &client, slack::user_id &user_id)
-{
-    auto user_list = client.users.list().members;
-    for (const auto &user : user_list)
-    {
-        if (user.is_bot && user.profile.api_app_id && (*(user.profile.api_app_id) == STATLER_APP_ID))
-        {
-            user_id = user.id;
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool is_user_in_channel_(const slack::slack &client, const slack::user_id &user_id, const slack::channel_id &channel_id)
-{
-    auto channel_members = client.channels.info(channel_id).channel.members;
-    for (const auto &user : channel_members)
-    {
-        if (user == user_id)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 uint8_t d100_()
 {
     static std::random_device rd;
@@ -65,9 +36,60 @@ uint8_t d100_()
     return i;
 }
 
-bool is_from_us_(slack::http_event_client::message message)
+bool event_receiver::get_companion_info_(const slack::token &token, team_info &info)
 {
-    return ((message.from_user_id == message.token.bot_id) || (message.from_user_id == message.token.bot_user_id) );
+    std::string info_str;
+    if (store_.get(token.team_id, info_str))
+    {
+        info = from_json(info_str);
+        return true;
+    }
+
+    // couldn't find it.
+    slack::slack client{token.bot_token};
+    auto user_list = client.users.list().members;
+    for (const auto &user : user_list)
+    {
+        if (user.is_bot && user.profile.api_app_id && (*(user.profile.api_app_id) == STATLER_APP_ID))
+        {
+            info.companion_user_id = user.id;
+            if (user.profile.bot_id)
+            {
+                info.companion_bot_id = *user.profile.bot_id;
+            }
+            store_.set(token.team_id, info.to_json());
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool is_companion_in_channel_(const slack::token &token, const team_info &info, const slack::channel_id &channel_id)
+{
+    slack::slack client{token.bot_token};
+
+    auto channel_members = client.channels.info(channel_id).channel.members;
+    for (const auto &user : channel_members)
+    {
+        if (user == info.companion_user_id)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+bool is_from_us_(const slack::http_event_client::message &message)
+{
+    return ((message.from_user_id == message.token.bot_id) || (message.from_user_id == message.token.bot_user_id));
+}
+
+bool is_from_companion_(const team_info &info, const std::string &from)
+{
+    return (from == info.companion_bot_id) || (from == info.companion_user_id);
 }
 
 void event_receiver::handle_error(std::string message, std::string received)
@@ -88,14 +110,21 @@ event_receiver::handle_unknown(std::shared_ptr<slack::event::unknown> event, con
         slack::slack c{envelope.token.bot_token};
         slack::user_id companion_user_id;
 
-        c.chat.postMessage(envelope.token.user_id, "Thanks for installing me!", slack::chat::postMessage::parameter::as_user{true});
-        if (is_companion_installed_(c, companion_user_id))
+        c.chat.postMessage(envelope.token.user_id,
+                           "Thanks for installing me!",
+                           slack::chat::postMessage::parameter::as_user{true});
+        team_info info;
+        if (get_companion_info_(envelope.token, info))
         {
-            c.chat.postMessage(envelope.token.user_id, "Just invite Statlerbot and me into any channel, and we'll get to heckling. (We only heckle a small fraction of messages in a channel.)", slack::chat::postMessage::parameter::as_user{true});
+            c.chat.postMessage(envelope.token.user_id,
+                               "Just invite Statlerbot and me into any channel, and we'll get to heckling. (We only heckle a small fraction of messages in a channel.)",
+                               slack::chat::postMessage::parameter::as_user{true});
         }
         else
         {
-            c.chat.postMessage(envelope.token.user_id, "Please also install <https://beepboophq.com/bots/083d21c8b3eb4886acf31f748337c1c2|my friend Statlerbot!>, then invite us into any channel to start heckling!", slack::chat::postMessage::parameter::as_user{true});
+            c.chat.postMessage(envelope.token.user_id,
+                               "Please also install <https://beepboophq.com/bots/083d21c8b3eb4886acf31f748337c1c2|my friend Statlerbot!>, then invite us into any channel to start heckling!",
+                               slack::chat::postMessage::parameter::as_user{true});
         }
     }
 }
@@ -106,32 +135,35 @@ void event_receiver::handle_join_channel(std::shared_ptr<slack::event::message_c
     //someone just joined a channel, is it us?
     if (event->user != envelope.token.bot_user_id) return; //it wasn't us
 
-    //see if waldorf is in this channel
-    //TODO do this in the background
+    //see if statler is in this channel
     slack::slack c{envelope.token.bot_token};
 
     slack::user_id companion_bot_user_id;
-    if(is_companion_installed_(c, companion_bot_user_id))
+    team_info info;
+    if (get_companion_info_(envelope.token, info))
     {
-        if(is_user_in_channel_(c, companion_bot_user_id, event->channel))
+        if (is_companion_in_channel_(envelope.token, info, event->channel))
         {
-            c.chat.postMessage(event->channel, "Statlerbot! There you are, old chum.", slack::chat::postMessage::parameter::as_user{true});
+            c.chat.postMessage(event->channel,
+                               "Statlerbot! There you are, old chum.",
+                               slack::chat::postMessage::parameter::as_user{true});
         }
         else
         {
-            c.chat.postMessage(event->channel, "Statlerbot, where are you? Can someone invite Statlerbot into the channel?", slack::chat::postMessage::parameter::as_user{true});
+            c.chat.postMessage(event->channel,
+                               "Statlerbot, where are you? Can someone invite Statlerbot into the channel?",
+                               slack::chat::postMessage::parameter::as_user{true});
         }
     }
     else
     {
-        c.chat.postMessage(event->channel, "Statlerbot, where are you? Can someone <https://beepboophq.com/bots/083d21c8b3eb4886acf31f748337c1c2|install Statlerbot> into this team?", slack::chat::postMessage::parameter::as_user{true});
-
+        c.chat.postMessage(event->channel,
+                           "Statlerbot, where are you? Can someone <https://beepboophq.com/bots/083d21c8b3eb4886acf31f748337c1c2|install Statlerbot> into this team?",
+                           slack::chat::postMessage::parameter::as_user{true});
     }
 }
 
-void
-event_receiver::handle_message(std::shared_ptr<slack::event::message> event,
-                               const slack::http_event_envelope &envelope)
+void event_receiver::handle_message_internal_(const slack::token &token, const slack::channel_id &channel_id)
 {
     static std::vector<std::string> phrases = {
             "They aren’t half bad.",
@@ -152,21 +184,34 @@ event_receiver::handle_message(std::shared_ptr<slack::event::message> event,
             "That was a funny comment.",
     };
 
+    auto phrase = *select_randomly(phrases.begin(), phrases.end());
+    slack::slack c{token.bot_token};
+    c.chat.postMessage(channel_id, phrase, slack::chat::postMessage::parameter::as_user{true});
+}
 
-    if (d100_() <= 5) //only respond 5% of the time TODO make this configurable
+void
+event_receiver::handle_message(std::shared_ptr<slack::event::message> event, const slack::http_event_envelope &envelope)
+{
+    team_info info;
+    bool maybe_ignore = get_companion_info_(envelope.token, info);
+
+    if (maybe_ignore)
     {
-        auto phrase = *select_randomly(phrases.begin(), phrases.end());
-        slack::slack c{envelope.token.bot_token};
-        c.chat.postMessage(event->channel, phrase, slack::chat::postMessage::parameter::as_user{true});
+        if ((!is_from_companion_(info, event->user)) &&
+            (d100_() <= 5)) //only respond 5% of the time TODO make this configurable
+        {
+            handle_message_internal_(envelope.token, event->channel);
+        }
     }
 }
 
-event_receiver::event_receiver(server *server, const std::string &verification_token) :
-        route_set{server},
-        handler_{verification_token}
+event_receiver::event_receiver(server &server, beep_boop_persist &store,
+                               const std::string &verification_token) :
+        server_{server},
+        handler_{verification_token},
+        store_{store}
 {
-
-    server->handle_request(request_method::POST, "/slack/event", [&](auto req) -> response
+    server.handle_request(request_method::POST, "/slack/event", [&](auto req) -> response
     {
         if (!req.headers.count("Bb-Slackteamid")) //TOOD make this more robust
         {
